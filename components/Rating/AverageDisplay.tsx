@@ -8,9 +8,6 @@ interface AverageDisplayProps {
   icon: LucideIcon;
 }
 
-/**
- * Display component for average ratings
- */
 const AverageDisplay: React.FC<AverageDisplayProps> = ({ average, label, icon: Icon }) => {
   return (
     <div className="average-row">

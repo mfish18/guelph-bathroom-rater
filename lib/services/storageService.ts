@@ -1,27 +1,29 @@
-/**
- * Client-side storage service for managing bathroom data
- * Uses localStorage for persistence
- */
-
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  getDoc,
+  getDocs, 
+  deleteDoc,
+  query,
+  orderBy 
+} from 'firebase/firestore';
+import { db } from '../firebase/config';
 import { Bathroom, Rating, Averages } from '../types';
 
-const BATHROOM_PREFIX = 'bathroom:';
-const BATHROOMS_LIST_KEY = 'bathrooms_list';
+const BATHROOMS_COLLECTION = 'bathrooms';
 
-/**
- * Load all bathrooms from localStorage
- */
-export const loadBathrooms = (): Bathroom[] => {
-  if (typeof window === 'undefined') return [];
-  
+export const loadBathrooms = async (): Promise<Bathroom[]> => {
   try {
-    const bathroomIds = JSON.parse(localStorage.getItem(BATHROOMS_LIST_KEY) || '[]') as string[];
-    const bathrooms = bathroomIds
-      .map(id => {
-        const data = localStorage.getItem(`${BATHROOM_PREFIX}${id}`);
-        return data ? JSON.parse(data) as Bathroom : null;
-      })
-      .filter((bathroom): bathroom is Bathroom => bathroom !== null);
+    const bathroomsRef = collection(db, BATHROOMS_COLLECTION);
+    const q = query(bathroomsRef, orderBy('id'));
+    const querySnapshot = await getDocs(q);
+    
+    const bathrooms: Bathroom[] = [];
+    querySnapshot.forEach((doc) => {
+      bathrooms.push(doc.data() as Bathroom);
+    });
+    
     return bathrooms;
   } catch (error) {
     console.error('Error loading bathrooms:', error);
@@ -29,23 +31,10 @@ export const loadBathrooms = (): Bathroom[] => {
   }
 };
 
-/**
- * Save a bathroom to localStorage
- */
-export const saveBathroom = (bathroom: Bathroom): boolean => {
-  if (typeof window === 'undefined') return false;
-  
+export const saveBathroom = async (bathroom: Bathroom): Promise<boolean> => {
   try {
-    // Save the bathroom data
-    localStorage.setItem(`${BATHROOM_PREFIX}${bathroom.id}`, JSON.stringify(bathroom));
-    
-    // Update the list of bathroom IDs
-    const bathroomIds = JSON.parse(localStorage.getItem(BATHROOMS_LIST_KEY) || '[]') as string[];
-    if (!bathroomIds.includes(bathroom.id)) {
-      bathroomIds.push(bathroom.id);
-      localStorage.setItem(BATHROOMS_LIST_KEY, JSON.stringify(bathroomIds));
-    }
-    
+    const bathroomRef = doc(db, BATHROOMS_COLLECTION, bathroom.id);
+    await setDoc(bathroomRef, bathroom);
     return true;
   } catch (error) {
     console.error('Error saving bathroom:', error);
@@ -53,30 +42,31 @@ export const saveBathroom = (bathroom: Bathroom): boolean => {
   }
 };
 
-/**
- * Delete a bathroom from localStorage
- */
-export const deleteBathroom = (bathroomId: string): boolean => {
-  if (typeof window === 'undefined') return false;
-  
+export const deleteBathroom = async (bathroomId: string): Promise<boolean> => {
   try {
-    localStorage.removeItem(`${BATHROOM_PREFIX}${bathroomId}`);
-    
-    // Update the list of bathroom IDs
-    const bathroomIds = JSON.parse(localStorage.getItem(BATHROOMS_LIST_KEY) || '[]') as string[];
-    const updatedIds = bathroomIds.filter(id => id !== bathroomId);
-    localStorage.setItem(BATHROOMS_LIST_KEY, JSON.stringify(updatedIds));
-    
+    const bathroomRef = doc(db, BATHROOMS_COLLECTION, bathroomId);
+    await deleteDoc(bathroomRef);
     return true;
   } catch (error) {
     console.error('Error deleting bathroom:', error);
     return false;
   }
 };
+export const getBathroom = async (bathroomId: string): Promise<Bathroom | null> => {
+  try {
+    const bathroomRef = doc(db, BATHROOMS_COLLECTION, bathroomId);
+    const bathroomDoc = await getDoc(bathroomRef);
+    
+    if (bathroomDoc.exists()) {
+      return bathroomDoc.data() as Bathroom;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting bathroom:', error);
+    return null;
+  }
+};
 
-/**
- * Calculate average ratings from an array of ratings
- */
 export const calculateAverages = (ratings: Rating[]): Averages => {
   if (!ratings || ratings.length === 0) {
     return { cleanliness: 0, supplies: 0, smell: 0 };

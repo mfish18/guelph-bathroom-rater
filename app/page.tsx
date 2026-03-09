@@ -7,12 +7,11 @@ import MapWrapper from '../components/Map/MapWrapper';
 import AddBathroomForm from '../components/Bathroom/AddBathroomForm';
 import BathroomDetailPanel from '../components/Bathroom/BathroomDetails';
 import RatingForm from '../components/Rating/RatingForm';
-import { loadBathrooms, saveBathroom, calculateAverages } from '../lib/services/storageService';
+import { useIsAdmin } from '../lib/hooks/useIsAdmin';
+import { useRatedBathrooms } from '../lib/hooks/useRatedBathrooms';
+import { loadBathrooms, saveBathroom, calculateAverages, deleteBathroom } from '../lib/services/storageService';
 import { Bathroom, Location, NewBathroomData, CurrentRating } from '../lib/types';
 
-/**
- * Main application page component
- */
 export default function Home() {
   const [bathrooms, setBathrooms] = useState<Bathroom[]>([]);
   const [selectedBathroom, setSelectedBathroom] = useState<Bathroom | null>(null);
@@ -20,23 +19,33 @@ export default function Home() {
   const [newLocation, setNewLocation] = useState<Location | null>(null);
   const [showRatingForm, setShowRatingForm] = useState<boolean>(false);
   const [mounted, setMounted] = useState<boolean>(false);
+  
+  // Check if current user is admin
+  const { isAdmin, loading: adminLoading } = useIsAdmin();
+  
+  // Track which bathrooms user has rated
+  const { hasRated, markAsRated } = useRatedBathrooms();
 
   // Load bathrooms from storage on mount
   useEffect(() => {
-    setMounted(true);
-    const loadedBathrooms = loadBathrooms();
-    setBathrooms(loadedBathrooms);
+    const initBathrooms = async () => {
+      setMounted(true);
+      const loadedBathrooms = await loadBathrooms();
+      setBathrooms(loadedBathrooms);
+    };
+    initBathrooms();
   }, []);
 
-  // Toggle adding mode
+  // Toggle adding mode (only works if admin)
   const handleToggleAddMode = () => {
+    if (!isAdmin) return; // Safety check
     setIsAddingMode(!isAddingMode);
     setNewLocation(null);
   };
 
   // Handle map click when in adding mode
   const handleMapClick = (location: Location) => {
-    if (isAddingMode) {
+    if (isAddingMode && isAdmin) { // Only allow if admin
       setNewLocation(location);
     }
   };
@@ -48,8 +57,10 @@ export default function Home() {
     }
   };
 
-  // Add new bathroom
-  const handleAddBathroom = (bathroomData: NewBathroomData) => {
+  // Add new bathroom (only if admin)
+  const handleAddBathroom = async (bathroomData: NewBathroomData) => {
+    if (!isAdmin) return; // Safety check
+    
     const bathroom: Bathroom = {
       id: Date.now().toString(),
       ...bathroomData,
@@ -57,15 +68,36 @@ export default function Home() {
       averages: { cleanliness: 0, supplies: 0, smell: 0 }
     };
 
-    saveBathroom(bathroom);
+    await saveBathroom(bathroom);
     setBathrooms([...bathrooms, bathroom]);
     setNewLocation(null);
     setIsAddingMode(false);
   };
 
+  // Delete bathroom (only if admin)
+  const handleDeleteBathroom = async () => {
+    if (!isAdmin || !selectedBathroom) return; // Safety check
+    
+    const success = await deleteBathroom(selectedBathroom.id);
+    
+    if (success) {
+      // Remove from local state
+      setBathrooms(bathrooms.filter(b => b.id !== selectedBathroom.id));
+      setSelectedBathroom(null);
+    } else {
+      alert('Failed to delete bathroom. Please try again.');
+    }
+  };
+
   // Submit a rating for a bathroom
-  const handleSubmitRating = (rating: CurrentRating) => {
+  const handleSubmitRating = async (rating: CurrentRating) => {
     if (!selectedBathroom) return;
+    
+    // Check if user already rated this bathroom
+    if (hasRated(selectedBathroom.id)) {
+      alert('You have already rated this bathroom!');
+      return;
+    }
 
     const updatedBathroom: Bathroom = { ...selectedBathroom };
     updatedBathroom.ratings.push({
@@ -76,7 +108,11 @@ export default function Home() {
     // Recalculate averages
     updatedBathroom.averages = calculateAverages(updatedBathroom.ratings);
 
-    saveBathroom(updatedBathroom);
+    await saveBathroom(updatedBathroom);
+    
+    // Mark as rated in this session
+    markAsRated(selectedBathroom.id);
+    
     setBathrooms(bathrooms.map(b => 
       b.id === updatedBathroom.id ? updatedBathroom : b
     ));
@@ -84,8 +120,8 @@ export default function Home() {
     setShowRatingForm(false);
   };
 
-  if (!mounted) {
-    return null;
+  if (!mounted || adminLoading) {
+    return null; // Or add a loading spinner
   }
 
   return (
@@ -96,6 +132,7 @@ export default function Home() {
         isAddingMode={isAddingMode}
         onToggleAddMode={handleToggleAddMode}
         bathroomCount={bathrooms.length}
+        isAdmin={isAdmin}
       />
 
       <div className="map-container">
@@ -108,8 +145,8 @@ export default function Home() {
         />
       </div>
 
-      {/* Add Bathroom Form */}
-      {newLocation && (
+      {/* Add Bathroom Form - Only show if admin */}
+      {newLocation && isAdmin && (
         <AddBathroomForm
           location={newLocation}
           onSubmit={handleAddBathroom}
@@ -123,11 +160,14 @@ export default function Home() {
           bathroom={selectedBathroom}
           onRate={() => setShowRatingForm(true)}
           onClose={() => setSelectedBathroom(null)}
+          onDelete={isAdmin ? handleDeleteBathroom : undefined}
+          hasRated={hasRated(selectedBathroom.id)}
+          isAdmin={isAdmin}
         />
       )}
 
-      {/* Rating Form */}
-      {showRatingForm && selectedBathroom && (
+      {/* Rating Form - Only show if user hasn't rated yet */}
+      {showRatingForm && selectedBathroom && !hasRated(selectedBathroom.id) && (
         <RatingForm
           bathroom={selectedBathroom}
           onSubmit={handleSubmitRating}

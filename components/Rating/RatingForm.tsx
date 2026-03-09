@@ -12,9 +12,6 @@ interface RatingFormProps {
   onClose: () => void;
 }
 
-/**
- * Form for submitting bathroom ratings
- */
 const RatingForm: React.FC<RatingFormProps> = ({ bathroom, onSubmit, onClose }) => {
   const [currentRating, setCurrentRating] = useState<CurrentRating>(INITIAL_RATING);
 

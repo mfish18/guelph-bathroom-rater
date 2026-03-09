@@ -7,7 +7,6 @@ import { Bathroom, Location } from '../../lib/types';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// Fix for default marker icons in React-Leaflet
 if (typeof window !== 'undefined') {
   delete (L.Icon.Default.prototype as unknown)._getIconUrl;
   L.Icon.Default.mergeOptions({
@@ -25,9 +24,6 @@ interface BathroomMapProps {
   onMarkerClick: (bathroom: Bathroom) => void;
 }
 
-/**
- * Interactive map component for displaying bathroom locations
- */
 const BathroomMap: React.FC<BathroomMapProps> = ({ 
   bathrooms, 
   newLocation, 
@@ -51,8 +47,6 @@ const BathroomMap: React.FC<BathroomMapProps> = ({
         isAddingMode={isAddingMode} 
         onMapClick={onMapClick} 
       />
-
-      {/* Existing bathroom markers */}
       {bathrooms.map((bathroom) => (
         <Marker
           key={bathroom.id}
@@ -63,7 +57,6 @@ const BathroomMap: React.FC<BathroomMapProps> = ({
         />
       ))}
 
-      {/* New bathroom location marker */}
       {newLocation && (
         <Marker position={[newLocation.lat, newLocation.lng]} />
       )}

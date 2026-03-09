@@ -9,9 +9,6 @@ interface StarRatingProps {
   icon: LucideIcon;
 }
 
-/**
- * Interactive star rating component
- */
 const StarRating: React.FC<StarRatingProps> = ({ rating, onRate, label, icon: Icon }) => {
   return (
     <div className="rating-container">

@@ -1,8 +1,5 @@
 'use client';
 
-/**
- * Application header with title and description
- */
 const Header: React.FC = () => {
   return (
     <div className="app-header">

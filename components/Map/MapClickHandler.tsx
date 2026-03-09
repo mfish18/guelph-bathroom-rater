@@ -10,9 +10,6 @@ interface MapClickHandlerProps {
   onMapClick: (location: Location) => void;
 }
 
-/**
- * Handles map click events for adding new bathroom locations
- */
 const MapClickHandler: React.FC<MapClickHandlerProps> = ({ isAddingMode, onMapClick }) => {
   const map = useMap();
 

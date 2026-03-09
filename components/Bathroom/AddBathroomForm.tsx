@@ -15,9 +15,6 @@ interface FormData {
   notes: string;
 }
 
-/**
- * Form for adding a new bathroom location
- */
 const AddBathroomForm: React.FC<AddBathroomFormProps> = ({ location, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState<FormData>({
     building: '',

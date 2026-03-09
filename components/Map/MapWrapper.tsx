@@ -11,7 +11,6 @@ interface MapWrapperProps {
   onMarkerClick: (bathroom: Bathroom) => void;
 }
 
-// Dynamically import the map component with no SSR
 const BathroomMap = dynamic(
   () => import('./BathroomMap'),
   { 

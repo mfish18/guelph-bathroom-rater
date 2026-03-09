@@ -1,20 +1,35 @@
 'use client';
 
-import { X, Droplets, Trash2, Wind } from 'lucide-react';
+import { X, Droplets, Trash2, Wind, Trash } from 'lucide-react';
 import AverageDisplay from '../Rating/AverageDisplay';
 import { Bathroom } from '../../lib/types';
+import { useState } from 'react';
 
 interface BathroomDetailPanelProps {
   bathroom: Bathroom;
   onRate: () => void;
   onClose: () => void;
+  onDelete?: () => void; 
+  hasRated: boolean;
+  isAdmin: boolean;  
 }
 
-/**
- * Panel displaying bathroom details and average ratings
- */
-const BathroomDetailPanel: React.FC<BathroomDetailPanelProps> = ({ bathroom, onRate, onClose }) => {
+const BathroomDetailPanel: React.FC<BathroomDetailPanelProps> = ({ 
+  bathroom, 
+  onRate, 
+  onClose,
+  onDelete,
+  hasRated,
+  isAdmin
+}) => {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const hasRatings = bathroom.ratings && bathroom.ratings.length > 0;
+
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete();
+    }
+  };
 
   return (
     <div className="modal-overlay">
@@ -65,13 +80,56 @@ const BathroomDetailPanel: React.FC<BathroomDetailPanelProps> = ({ bathroom, onR
           </div>
         )}
 
-        <button
-          onClick={onRate}
-          className="btn-submit"
-          type="button"
-        >
-          Rate This Bathroom
-        </button>
+        {hasRated ? (
+          <div className="info-box-empty mb-4">
+            <p className="info-box-empty-text">✅ You have already rated this bathroom!</p>
+          </div>
+        ) : (
+          <button
+            onClick={onRate}
+            className="btn-submit mb-4"
+            type="button"
+          >
+            Rate This Bathroom
+          </button>
+        )}
+
+        {isAdmin && (
+          <>
+            {!showDeleteConfirm ? (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="w-full bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                type="button"
+              >
+                <Trash className="w-4 h-4" />
+                Delete Bathroom
+              </button>
+            ) : (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-800 mb-3 font-medium">
+                  Are you sure? This will delete all ratings!
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleDelete}
+                    className="flex-1 bg-red-600 text-white px-3 py-2 rounded font-medium hover:bg-red-700 transition-colors text-sm"
+                    type="button"
+                  >
+                    Yes, Delete
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="flex-1 bg-gray-200 text-gray-700 px-3 py-2 rounded font-medium hover:bg-gray-300 transition-colors text-sm"
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
