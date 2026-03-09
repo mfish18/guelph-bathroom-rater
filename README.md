@@ -1,5 +1,6 @@
 🚽 University of Guelph Bathroom Rater
 A community-driven web application that helps University of Guelph students find and rate the best bathrooms on campus. Built with Next.js, TypeScript, and Firebase.
+https://guelph-bathroom-rater.vercel.app/
 
 🎯 Features
 
@@ -25,4 +26,4 @@ Hosting: Vercel
 📧 Contact
 Michael Fish - mfish980@gmail.com
 Project Link: https://github.com/mfish18/guelph-bathroom-rater
-Live Demo: https://your-app.vercel.app
+Live Demo: https://guelph-bathroom-rater.vercel.app/
